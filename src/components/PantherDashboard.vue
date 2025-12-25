@@ -1,5 +1,6 @@
 <script setup>
 import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
+import PantherCanvas from '@/components/PantherCanvas.vue'
 
 const {
   state,
@@ -37,12 +38,12 @@ const pantherTypeLabel = computed(() => {
 })
 
 const ageText = computed(() => {
-  now.value
+  now.value // dependency trigger
   return getAge()
 })
 
 const lastFedText = computed(() => {
-  now.value
+  now.value // dependency trigger
   return timeAgo(state.panther.lastFedAt)
 })
 
@@ -53,31 +54,33 @@ function play() {
 </script>
 
 <template>
-  <section>
-    <h1>{{ state.panther.name }}</h1>
-    <p class="type">{{ pantherTypeLabel }}</p>
+  <section class="panther-game">
+    <header>
+      <h1>{{ state.panther.name }}</h1>
+      <p class="type">{{ pantherTypeLabel }}</p>
+    </header>
+
+    <!-- Canvas -->
+    <PantherCanvas class="canvas" />
 
     <!-- Stats -->
-    <p>
-      {{ state.panther.name }} has existed for {{ ageText }}.
-    </p>
+    <div class="stats">
+      <p>
+        {{ state.panther.name }} has existed for {{ ageText }}.
+      </p>
 
-    <p>
-      Last fed: {{ lastFedText }}
-    </p>
+      <p>
+        Last fed: {{ lastFedText }}
+      </p>
 
-    <p>
-      Mood: {{ state.panther.mood }}
-    </p>
+      <p>
+        Mood: {{ state.panther.mood }}
+      </p>
 
-    <p v-if="state.panther.lastPlayedWith">
-      {{ state.panther.name }} last played with
-      {{ state.panther.lastPlayedWith }}.
-    </p>
-
-    <!-- Visual placeholder -->
-    <div class="panther-visual">
-      <em>[ Mind Panther Image / Canvas Placeholder ]</em>
+      <p v-if="state.panther.lastPlayedWith">
+        {{ state.panther.name }} last played with
+        {{ state.panther.lastPlayedWith }}.
+      </p>
     </div>
 
     <!-- Actions -->
@@ -101,3 +104,44 @@ function play() {
     </div>
   </section>
 </template>
+
+<style scoped>
+.panther-game {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+header {
+  text-align: center;
+}
+
+.type {
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.canvas {
+  align-self: center;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.play {
+  display: flex;
+  gap: 0.5rem;
+}
+</style>
