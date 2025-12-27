@@ -34,7 +34,7 @@ onMounted(async () => {
     loadImage(new URL('@/assets/backgrounds/Jungle_Layer_4.png', import.meta.url)),
     loadImage(new URL('@/assets/backgrounds/Jungle_Layer_5.png', import.meta.url)),
   ])
-  const dizzyBackroundLayers = [
+  const dizzyBackroundLayers = [//may use this later
       { image: backgroundImages[0], speed: 0.02 },
       { image: backgroundImages[1], speed: 0.04 },
       { image: backgroundImages[2], speed: 0.08 },
@@ -45,13 +45,14 @@ onMounted(async () => {
     canvasWidth: canvas.width,
     canvasHeight: canvas.height,
     layers: [
-      { image: backgroundImages[0], speed: 0.10 },
+      { image: backgroundImages[0], speed: 0.10, foreground: true }, // layer 1
       { image: backgroundImages[1], speed: 0.08 },
       { image: backgroundImages[2], speed: 0.04 },
       { image: backgroundImages[3], speed: 0.02 },
       { image: backgroundImages[4], speed: 0.01 },
     ],
   })
+
 
   // --- Load panther sprite ---
   const pantherImage = await loadImage(
@@ -62,10 +63,13 @@ onMounted(async () => {
     image: pantherImage,
     canvasWidth: canvas.width,
     canvasHeight: canvas.height,
-    frameWidth: 128,   // <-- adjust to your sprite sheet
-    frameHeight: 128,  // <-- adjust to your sprite sheet
-    frameCount: 6,     // <-- adjust to your sprite sheet
+    frameWidth: pantherImage.width / 3,
+    frameHeight: pantherImage.height / 6,
+    frameCount: 17,
+    columns: 3,
+    scale: .4, // optional but likely needed for an 8000px sheet
   })
+
 
   // --- Create & start engine ---
   engine = createEngine({

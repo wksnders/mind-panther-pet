@@ -1,4 +1,4 @@
-export function createEngine({ ctx, scene, panther }) {
+export function createEngine({ ctx, scene, panther = null }) {
   let lastTime = 0
   let running = false
 
@@ -11,10 +11,14 @@ export function createEngine({ ctx, scene, panther }) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
     scene.update(delta)
-    scene.draw(ctx)
+    scene.drawBackground(ctx)
 
-    panther.update(delta)
-    panther.draw(ctx)
+    if (panther) {
+      panther.update(delta)
+      panther.draw(ctx)
+    }
+
+    scene.drawForeground(ctx)
 
     requestAnimationFrame(loop)
   }

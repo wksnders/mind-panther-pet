@@ -4,6 +4,7 @@ export function createSprite({
   frameHeight,
   frameCount,
   frameDuration, // ms per frame
+  columns,
 }) {
   let currentFrame = 0
   let elapsed = 0
@@ -18,10 +19,16 @@ export function createSprite({
   }
 
   function draw(ctx, x, y, scale = 1) {
+    const col = currentFrame % columns
+    const row = Math.floor(currentFrame / columns)
+
+    const sx = col * frameWidth
+    const sy = row * frameHeight
+
     ctx.drawImage(
       image,
-      currentFrame * frameWidth,
-      0,
+      sx,
+      sy,
       frameWidth,
       frameHeight,
       x,

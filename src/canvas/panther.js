@@ -7,6 +7,8 @@ export function createPanther({
   frameWidth,
   frameHeight,
   frameCount,
+  columns = 3, // <-- important for multi-row sprite sheets
+  scale = 1,
 }) {
   const sprite = createSprite({
     image,
@@ -14,17 +16,23 @@ export function createPanther({
     frameHeight,
     frameCount,
     frameDuration: 120,
+    columns,
   })
 
-  const x = canvasWidth / 2 - frameWidth / 2
-  const y = canvasHeight - frameHeight - 20
+  // Center horizontally, sit on "ground"
+  let x = canvasWidth / 2 - (frameWidth * scale) / 2
+  let y = canvasHeight - frameHeight * scale - 20
 
   function update(delta) {
     sprite.update(delta)
   }
 
   function draw(ctx) {
-    sprite.draw(ctx, x, y, 1)
+    ctx.save()
+    ctx.scale(-1, 1)
+    sprite.draw(ctx, -((canvasWidth+x)/2), y,scale )
+    ctx.restore()
+    
   }
 
   return {
