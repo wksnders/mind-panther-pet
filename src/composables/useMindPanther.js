@@ -24,11 +24,9 @@ function createDefaultPanther() {
     pronouns: '',
     lore: '',
     type: 'mind',
-
     lastFedAt: null,
     lastPlayedAt: null,
     lastPlayedWith: '',
-
     mood: 'neutral',
   }
 }
@@ -65,38 +63,58 @@ function formatDuration(ms) {
   return parts.slice(0, 3).join(', ')
 }
 
+function loadPanther() {
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) return createDefaultPanther()
+  try {
+    return { ...createDefaultPanther(), ...JSON.parse(raw) }
+  } catch {
+    return createDefaultPanther()
+  }
+}
+
+function loadSettings() {
+  const raw = localStorage.getItem(`${STORAGE_KEY}-settings`)
+  if (!raw) return { direction: 1, reduceMotion: false }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return { direction: 1, reduceMotion: false }
+  }
+}
+
 export function useMindPanther() {
-  const state = reactive({
-    panther: loadFromStorage(),
-    isCreated: false,
+  const pantherState = reactive({
+    panther: loadPanther(),
+    isCreated: !!loadPanther().createdAt,
+    direction: loadSettings().direction,
+    reduceMotion: loadSettings().reduceMotion,
   })
 
-  function loadFromStorage() {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createDefaultPanther()
-
-    try {
-      return {
-        ...createDefaultPanther(),
-        ...JSON.parse(raw),
-      }
-    } catch {
-      return createDefaultPanther()
-    }
-  }
-
-  function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.panther))
+  function savePanther() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pantherState.panther))
+    localStorage.setItem(
+      `${STORAGE_KEY}-settings`,
+      JSON.stringify({
+        direction: pantherState.direction,
+        reduceMotion: pantherState.reduceMotion,
+      })
+    )
   }
 
   watch(
-    () => state.panther,
-    saveToStorage,
+    () => pantherState.panther,
+    savePanther,
     { deep: true }
   )
 
+  watch(
+    () => [pantherState.direction, pantherState.reduceMotion],
+    savePanther
+  )
+
   function createPanther({ name, pronouns, lore, type }) {
-    state.panther = {
+    pantherState.panther = {
       ...createDefaultPanther(),
       name,
       pronouns,
@@ -105,23 +123,23 @@ export function useMindPanther() {
       createdAt: Date.now(),
       lastFedAt: Date.now(),
     }
-    state.isCreated = true
+    pantherState.isCreated = true
   }
 
   function feed() {
-    state.panther.lastFedAt = Date.now()
-    state.panther.mood = 'happy'
+    pantherState.panther.lastFedAt = Date.now()
+    pantherState.panther.mood = 'happy'
   }
 
   function playWith(otherName) {
-    state.panther.lastPlayedAt = Date.now()
-    state.panther.lastPlayedWith = otherName
-    state.panther.mood = 'happy'
+    pantherState.panther.lastPlayedAt = Date.now()
+    pantherState.panther.lastPlayedWith = otherName
+    pantherState.panther.mood = 'happy'
   }
 
   function getAge() {
-    if (!state.panther.createdAt) return 'unknown'
-    return formatDuration(Date.now() - state.panther.createdAt)
+    if (!pantherState.panther.createdAt) return 'unknown'
+    return formatDuration(Date.now() - pantherState.panther.createdAt)
   }
 
   function timeAgo(timestamp) {
@@ -129,13 +147,23 @@ export function useMindPanther() {
     return formatDuration(Date.now() - timestamp) + ' ago'
   }
 
+  function setDirection(dir) {
+    pantherState.direction = Math.sign(dir)
+  }
+
+  function setReduceMotion(enabled) {
+    pantherState.reduceMotion = !!enabled
+  }
+
   return {
-    state,
+    state: pantherState,
     PANTHER_TYPES,
     createPanther,
     feed,
     playWith,
     getAge,
     timeAgo,
+    setDirection,
+    setReduceMotion,
   }
 }

@@ -1,22 +1,10 @@
 <script setup>
-import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
-import PantherCanvas from '@/components/PantherCanvas.vue'
+import { inject, ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import PantherCanvas from './PantherCanvas.vue'
 
-const {
-  state,
-  feed,
-  playWith,
-  getAge,
-  timeAgo,
-  PANTHER_TYPES,
-} = inject('panther')
+const pantherStore = inject('panther')
 
 const otherPantherName = ref('')
-
-/**
- * Reactive clock tick
- * Updating this forces recomputation of time-based displays
- */
 const now = ref(Date.now())
 let intervalId = null
 
@@ -32,78 +20,71 @@ onUnmounted(() => {
 
 const pantherTypeLabel = computed(() => {
   return (
-    PANTHER_TYPES.find(t => t.value === state.panther.type)?.label ??
+    pantherStore.PANTHER_TYPES.find(t => t.value === pantherStore.state.panther.type)?.label ??
     'Mind Panther'
   )
 })
 
 const ageText = computed(() => {
-  now.value // dependency trigger
-  return getAge()
+  now.value
+  return pantherStore.getAge()
 })
 
 const lastFedText = computed(() => {
-  now.value // dependency trigger
-  return timeAgo(state.panther.lastFedAt)
+  now.value
+  return pantherStore.timeAgo(pantherStore.state.panther.lastFedAt)
 })
 
 function play() {
-  playWith(otherPantherName.value)
+  pantherStore.playWith(otherPantherName.value)
   otherPantherName.value = ''
 }
+
+function goBackToCreator() {
+  pantherStore.state.isCreated = false
+}
+
+// Local reactive copies for direction and reduce motion
+const direction = ref(pantherStore.state.direction)
+const reduceMotion = ref(pantherStore.state.reduceMotion)
+
+// Keep local copies synced with store
+watch(() => pantherStore.state.direction, val => direction.value = val)
+watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
 </script>
 
 <template>
   <section class="panther-game">
     <header>
-      <h1>{{ state.panther.name }}</h1>
+      <h1>{{ pantherStore.state.panther.name }}</h1>
       <p class="type">{{ pantherTypeLabel }}</p>
     </header>
 
-    <!-- Canvas -->
-    <PantherCanvas class="canvas" />
+    <PantherCanvas
+      :direction="direction"
+      :reduce-motion="reduceMotion"
+    />
 
-    <!-- Stats -->
     <div class="stats">
-      <p>
-        {{ state.panther.name }} has existed for {{ ageText }}.
-      </p>
-
-      <p>
-        Last fed: {{ lastFedText }}
-      </p>
-
-      <p>
-        Mood: {{ state.panther.mood }}
-      </p>
-
-      <p v-if="state.panther.lastPlayedWith">
-        {{ state.panther.name }} last played with
-        {{ state.panther.lastPlayedWith }}.
+      <p>{{ pantherStore.state.panther.name }} has existed for {{ ageText }}.</p>
+      <p>Last fed: {{ lastFedText }}</p>
+      <p>Mood: {{ pantherStore.state.panther.mood }}</p>
+      <p v-if="pantherStore.state.panther.lastPlayedWith">
+        {{ pantherStore.state.panther.name }} last played with {{ pantherStore.state.panther.lastPlayedWith }}.
       </p>
     </div>
 
-    <!-- Actions -->
     <div class="actions">
-      <button @click="feed">
-        Feed
-      </button>
-
+      <button @click="pantherStore.feed">Feed</button>
       <div class="play">
-        <input
-          v-model="otherPantherName"
-          placeholder="Other panther's name"
-        />
-        <button
-          :disabled="!otherPantherName"
-          @click="play"
-        >
-          Play
-        </button>
+        <input v-model="otherPantherName" placeholder="Other panther's name" />
+        <button :disabled="!otherPantherName" @click="play">Play</button>
       </div>
+      <button @click="goBackToCreator">Back to Creator</button>
     </div>
   </section>
 </template>
+
 
 <style scoped>
 .panther-game {

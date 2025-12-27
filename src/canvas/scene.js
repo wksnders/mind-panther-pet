@@ -6,7 +6,7 @@ export function createScene({ layers, canvasWidth, canvasHeight }) {
     foreground: !!layer.foreground,
   }))
 
-  let direction = 1
+  let direction = 0
   let parallaxEnabled = true
 
   function setDirection(dir) {
@@ -20,12 +20,17 @@ export function createScene({ layers, canvasWidth, canvasHeight }) {
   function update(delta) {
     if (!parallaxEnabled || direction === 0) return
 
-    state.forEach(layer => {
-      layer.x -= layer.speed * delta * direction
+    // scene scrolls opposite to movement
+    const scrollDir = -direction
 
+    state.forEach(layer => {
       const width = layer.image.width
-      if (layer.x <= -width) layer.x += width
-      if (layer.x >= width) layer.x -= width
+
+      layer.x =
+        (layer.x + layer.speed * delta * scrollDir) % width
+
+      // keep x in a stable negative range (avoids large floats)
+      if (layer.x > 0) layer.x -= width
     })
   }
 
@@ -33,6 +38,8 @@ export function createScene({ layers, canvasWidth, canvasHeight }) {
     const img = layer.image
     const width = img.width
 
+    // draw 3 copies to guarantee coverage in both directions
+    ctx.drawImage(img, layer.x - width, 0, width, canvasHeight)
     ctx.drawImage(img, layer.x, 0, width, canvasHeight)
     ctx.drawImage(img, layer.x + width, 0, width, canvasHeight)
   }
