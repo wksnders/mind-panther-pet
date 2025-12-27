@@ -67,7 +67,7 @@ onMounted(async () => {
     frameHeight: pantherImage.height / 6,
     frameCount: 17,
     columns: 3,
-    scale: .4, // optional but likely needed for an 8000px sheet
+    scale: 3,
   })
 
 
