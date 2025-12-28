@@ -1,5 +1,13 @@
-# Vue 3 + Vite
+# Mind Panther Digital Pet
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A small website featuring a digital pet as a fun gift for a friend.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Features
+
+- Create and customize your own Mind Panther with a name, pronouns, lore, and type.
+- Interactive dashboard to feed and play with your Mind Panther.
+- Animated canvas with parallax background and controllable movement.
+- Supports reduced motion for accessibility.
+- Persists your Mind Panther across page refreshes using localStorage.
+
+## hosted on github pages
