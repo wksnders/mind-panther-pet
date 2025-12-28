@@ -55,6 +55,8 @@ watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
 
 <template>
   <section class="panther-game">
+      
+      <button @click="goBackToCreator">Back to Creator</button>
     <header>
       <h1>{{ pantherStore.state.panther.name }}</h1>
       <p class="type">{{ pantherTypeLabel }}</p>
@@ -80,7 +82,6 @@ watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
         <input v-model="otherPantherName" placeholder="Other panther's name" />
         <button :disabled="!otherPantherName" @click="play">Play</button>
       </div>
-      <button @click="goBackToCreator">Back to Creator</button>
     </div>
   </section>
 </template>
