@@ -41,8 +41,14 @@ function play() {
 }
 
 function goBackToCreator() {
-  pantherStore.state.isCreated = false
+  const confirmed = window.confirm(
+    'Going back will overwrite your current Mind Panther. Are you sure?'
+  )
+  if (confirmed) {
+    pantherStore.state.isCreated = false
+  }
 }
+
 
 // Local reactive copies for direction and reduce motion
 const direction = ref(pantherStore.state.direction)
