@@ -9,24 +9,30 @@ const { state: pantherState } = inject('panther')
 const canvasRef = ref(null)
 const engine = ref(null)
 const pantherRef = ref(null)
+const sceneRef = ref(null)
 
-// Initialize direction and parallax from panther object
-const direction = ref(pantherState.direction ?? 0)
-const parallaxEnabled = ref(!(pantherState.reduceMotion ?? false))
+// Props for parent-controlled direction & reduced motion
+const props = defineProps({
+  initialDirection: { type: Number, default: 0 },
+  initialReducedMotion: { type: Boolean, default: false }
+})
 
-function toggleDirection(dir) {
-  direction.value = direction.value === dir ? 0 : dir
-  if (engine.value) engine.value.setDirection(direction.value)
-  if (pantherRef.value?.setDirection) pantherRef.value.setDirection(direction.value)
-  pantherState.direction = direction.value
-}
+// Reactive local copies
+const direction = ref(props.initialDirection)
+const parallaxEnabled = ref(!props.initialReducedMotion)
 
-function toggleParallax() {
-  parallaxEnabled.value = !parallaxEnabled.value
-  if (engine.value) engine.value.setParallaxEnabled(parallaxEnabled.value)
-  if (pantherRef.value?.setReducedMotion) pantherRef.value.setReducedMotion(!parallaxEnabled.value)
-  pantherState.reduceMotion = !parallaxEnabled.value
-}
+// Watch for prop changes from parent
+watch(() => props.initialDirection, val => {
+  direction.value = val
+  if (engine.value) engine.value.setDirection(val)
+  if (pantherRef.value?.setDirection) pantherRef.value.setDirection(val)
+})
+
+watch(() => props.initialReducedMotion, val => {
+  parallaxEnabled.value = !val
+  if (engine.value) engine.value.setParallaxEnabled(!val)
+  if (pantherRef.value?.setReducedMotion) pantherRef.value.setReducedMotion(val)
+})
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -37,12 +43,25 @@ function loadImage(src) {
   })
 }
 
-onMounted(async () => {
+async function initCanvas() {
   const canvas = canvasRef.value
   const ctx = canvas.getContext('2d')
 
-  canvas.width = 800
-  canvas.height = 400
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth
+    canvas.height = canvas.parentElement.clientHeight
+    if (sceneRef.value) {
+      sceneRef.value.width = canvas.width
+      sceneRef.value.height = canvas.height
+    }
+    if (pantherRef.value) {
+      pantherRef.value.canvasWidth = canvas.width
+      pantherRef.value.canvasHeight = canvas.height
+    }
+  }
+
+  window.addEventListener('resize', resizeCanvas)
+  resizeCanvas()
 
   // --- Load background layers ---
   const backgroundImages = await Promise.all([
@@ -57,13 +76,14 @@ onMounted(async () => {
     canvasWidth: canvas.width,
     canvasHeight: canvas.height,
     layers: [
-      { image: backgroundImages[0], speed: 0.10, foreground: true },
+      { image: backgroundImages[0], speed: 0.1, foreground: true },
       { image: backgroundImages[1], speed: 0.08 },
       { image: backgroundImages[2], speed: 0.04 },
       { image: backgroundImages[3], speed: 0.02 },
       { image: backgroundImages[4], speed: 0.01 },
     ],
   })
+  sceneRef.value = scene
 
   // --- Load panther sprite ---
   const pantherImage = await loadImage(
@@ -85,108 +105,45 @@ onMounted(async () => {
 
   pantherRef.value = panther
 
-  engine.value = createEngine({
-    ctx,
-    scene,
-    panther,
-  })
-
+  engine.value = createEngine({ ctx, scene, panther })
   engine.value.setDirection(direction.value)
   engine.value.setParallaxEnabled(parallaxEnabled.value)
   engine.value.start()
-})
 
-onUnmounted(() => {
-  engine.value?.stop()
-})
+  onUnmounted(() => {
+    engine.value?.stop()
+    window.removeEventListener('resize', resizeCanvas)
+  })
+}
 
-// Watch reactive states so UI and engine stay in sync
-watch(direction, (val) => {
-  if (engine.value) engine.value.setDirection(val)
-  if (pantherRef.value?.setDirection) pantherRef.value.setDirection(val)
-  pantherState.direction = val
-})
+onMounted(initCanvas)
 
-watch(parallaxEnabled, (val) => {
-  if (engine.value) engine.value.setParallaxEnabled(val)
-  if (pantherRef.value?.setReducedMotion) pantherRef.value.setReducedMotion(!val)
-  pantherState.reduceMotion = !val
-})
+// Expose refs for parent to manipulate if needed
+defineExpose({ engine, pantherRef })
 </script>
 
 <template>
   <div class="panther-canvas-wrapper">
     <canvas ref="canvasRef" />
-
-    <div class="controls">
-      <button
-        :class="{ active: direction === -1 }"
-        @click="toggleDirection(-1)"
-      >
-        ◀
-      </button>
-
-      <button
-        :class="{ active: direction === 1 }"
-        @click="toggleDirection(1)"
-      >
-        ▶
-      </button>
-
-      <label class="toggle">
-        <input
-          type="checkbox"
-          :checked="!parallaxEnabled"
-          @change="toggleParallax"
-        />
-        Reduce motion
-      </label>
-    </div>
+    <!-- Slot for parent controls -->
+    <slot />
   </div>
 </template>
 
 <style scoped>
 .panther-canvas-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #0e0e0e;
-  padding: 1rem;
-  gap: 0.75rem;
+  position: relative;
+  width: 100%;
+  height: 400px; /* default height, scalable via parent container */
+  border-radius: 12px;
+  overflow: hidden;
+  background: black;
 }
 
 canvas {
-  border-radius: 12px;
-  border: 1px solid #333;
-  background: black;
+  width: 100%;
+  height: 100%;
+  display: block;
   image-rendering: pixelated;
-}
-
-.controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.controls button {
-  padding: 0.4rem 0.75rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #444;
-  background: #1a1a1a;
-  color: #eee;
-  cursor: pointer;
-}
-
-.controls button.active {
-  background: #444;
-}
-
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: #ccc;
 }
 </style>
