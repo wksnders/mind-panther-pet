@@ -1,4 +1,10 @@
-import { reactive, watch } from 'vue'
+import { reactive, watch, computed, onMounted, onUnmounted } from 'vue'
+import {
+  FOOD_STATES,
+  PLAY_STATES,
+  getNextFoodState,
+  getNextPlayState,
+} from '@/mood_state_machine'
 
 const STORAGE_KEY = 'mind-panther'
 
@@ -24,10 +30,16 @@ function createDefaultPanther() {
     pronouns: '',
     lore: '',
     type: 'mind',
+
     lastFedAt: null,
     lastPlayedAt: null,
     lastPlayedWith: '',
-    mood: 'neutral',
+
+    foodState: FOOD_STATES.FULL,
+    playState: PLAY_STATES.NEUTRAL,
+    moods: [],
+    hopefulAt: null,
+    sleptAt: null,
   }
 }
 
@@ -67,7 +79,8 @@ function loadPanther() {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return createDefaultPanther()
   try {
-    return { ...createDefaultPanther(), ...JSON.parse(raw) }
+    const parsed = JSON.parse(raw)
+    return { ...createDefaultPanther(), ...parsed }
   } catch {
     return createDefaultPanther()
   }
@@ -81,6 +94,16 @@ function loadSettings() {
   } catch {
     return { direction: 1, reduceMotion: false }
   }
+}
+
+function updateMoods(panther) {
+  panther.foodState = getNextFoodState(panther.foodState, panther)
+  panther.playState = getNextPlayState(panther.playState, panther)
+
+  const moods = []
+  if (panther.foodState !== FOOD_STATES.FULL) moods.push(panther.foodState)
+  if (panther.playState !== PLAY_STATES.NEUTRAL) moods.push(panther.playState)
+  panther.moods = moods
 }
 
 export function useMindPanther() {
@@ -102,16 +125,8 @@ export function useMindPanther() {
     )
   }
 
-  watch(
-    () => pantherState.panther,
-    savePanther,
-    { deep: true }
-  )
-
-  watch(
-    () => [pantherState.direction, pantherState.reduceMotion],
-    savePanther
-  )
+  watch(() => pantherState.panther, savePanther, { deep: true })
+  watch(() => [pantherState.direction, pantherState.reduceMotion], savePanther)
 
   function createPanther({ name, pronouns, lore, type }) {
     pantherState.panther = {
@@ -122,20 +137,32 @@ export function useMindPanther() {
       type: type ?? 'mind',
       createdAt: Date.now(),
       lastFedAt: Date.now(),
+      lastPlayedAt: Date.now(),
     }
+    updateMoods(pantherState.panther)
     pantherState.isCreated = true
   }
 
   function feed() {
     pantherState.panther.lastFedAt = Date.now()
-    pantherState.panther.mood = 'happy'
+    updateMoods(pantherState.panther)
   }
 
   function playWith(otherName) {
     pantherState.panther.lastPlayedAt = Date.now()
     pantherState.panther.lastPlayedWith = otherName
-    pantherState.panther.mood = 'happy'
+    updateMoods(pantherState.panther)
   }
+
+  // Automatically update moods periodically
+  let intervalId
+  onMounted(() => {
+    intervalId = setInterval(() => {
+      if (!pantherState.isCreated) return
+      updateMoods(pantherState.panther)
+    }, 10_000)
+  })
+  onUnmounted(() => clearInterval(intervalId))
 
   function getAge() {
     if (!pantherState.panther.createdAt) return 'unknown'

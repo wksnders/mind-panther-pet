@@ -4,20 +4,23 @@ import PantherCanvas from './PantherCanvas.vue'
 
 const pantherStore = inject('panther')
 
+// Inputs
 const otherPantherName = ref('')
 const now = ref(Date.now())
-let intervalId = null
 
-onMounted(() => {
-  intervalId = setInterval(() => {
-    now.value = Date.now()
-  }, 1000)
-})
+// Direction and motion
+const direction = ref(pantherStore.state.direction)
+const reduceMotion = ref(pantherStore.state.reduceMotion)
 
-onUnmounted(() => {
-  clearInterval(intervalId)
-})
+// Editable fields
+const pronouns = ref(pantherStore.state.panther.pronouns)
+const lore = ref(pantherStore.state.panther.lore)
 
+// Responsive canvas size
+const canvasWidth = ref(Math.min(window.innerWidth - 80, 900))
+const canvasHeight = ref(canvasWidth.value * 0.5)
+
+// Computed labels
 const pantherTypeLabel = computed(() => {
   return (
     pantherStore.PANTHER_TYPES.find(t => t.value === pantherStore.state.panther.type)?.label ??
@@ -25,63 +28,56 @@ const pantherTypeLabel = computed(() => {
   )
 })
 
-const ageText = computed(() => {
-  now.value
-  return pantherStore.getAge()
-})
+const ageText = computed(() => pantherStore.getAge())
+const lastFedText = computed(() => pantherStore.timeAgo(pantherStore.state.panther.lastFedAt))
+const moodText = computed(() => pantherStore.state.panther.moods.join(', '))
 
-const lastFedText = computed(() => {
-  now.value
-  return pantherStore.timeAgo(pantherStore.state.panther.lastFedAt)
-})
-
+// Play action
 function play() {
   pantherStore.playWith(otherPantherName.value)
   otherPantherName.value = ''
 }
 
+// Return to creator
 function goBackToCreator() {
   const confirmed = window.confirm(
     'Going back will overwrite your current Mind Panther. Are you sure?'
   )
-  if (confirmed) {
-    pantherStore.state.isCreated = false
-  }
+  if (confirmed) pantherStore.state.isCreated = false
 }
 
-// Local reactive copies for direction and reduce motion
-const direction = ref(pantherStore.state.direction)
-const reduceMotion = ref(pantherStore.state.reduceMotion)
-
-// Keep local copies synced with store
-watch(() => pantherStore.state.direction, val => direction.value = val)
-watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
-
-// Editable fields
-const pronouns = ref(pantherStore.state.panther.pronouns)
-const lore = ref(pantherStore.state.panther.lore)
-
-// Sync edits with panther store
-watch(pronouns, val => pantherStore.state.panther.pronouns = val)
-watch(lore, val => pantherStore.state.panther.lore = val)
-
-// Responsive canvas size
-const canvasWidth = ref(Math.min(window.innerWidth - 80, 900))
-const canvasHeight = ref(canvasWidth.value * 0.5)
-
+// Update canvas size
 function updateCanvasSize() {
   canvasWidth.value = Math.min(window.innerWidth - 80, 900)
   canvasHeight.value = canvasWidth.value * 0.5
 }
 
+// Watchers to sync local fields with store
+watch(() => pantherStore.state.direction, val => direction.value = val)
+watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
+watch(pronouns, val => pantherStore.state.panther.pronouns = val)
+watch(lore, val => pantherStore.state.panther.lore = val)
+
+// Auto-update "now" and moods
+let intervalId = null
 onMounted(() => {
+  intervalId = setInterval(() => {
+    now.value = Date.now()
+    if (pantherStore.state.isCreated && pantherStore.updateMoods) {
+      pantherStore.updateMoods(pantherStore.state.panther)
+    }
+  }, 1000)
+
   window.addEventListener('resize', updateCanvasSize)
 })
 
 onUnmounted(() => {
+  clearInterval(intervalId)
   window.removeEventListener('resize', updateCanvasSize)
 })
 </script>
+
+
 
 <template>
   <section class="panther-game">
@@ -148,7 +144,7 @@ onUnmounted(() => {
         </tr>
         <tr>
           <th>Mood</th>
-          <td>{{ pantherStore.state.panther.mood }}</td>
+          <td>{{ moodText }}</td>
         </tr>
         <tr v-if="pantherStore.state.panther.lastPlayedWith">
           <th>Last Played With</th>
