@@ -11,3 +11,5 @@ A small website featuring a digital pet as a fun gift for a friend.
 - Persists your Mind Panther across page refreshes using localStorage.
 
 ## hosted on github pages
+
+credit for the background jungle art goes to trashboat93 on itch.io
