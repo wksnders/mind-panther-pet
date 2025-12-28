@@ -10,9 +10,9 @@ A small website featuring a digital pet as a fun gift for a friend.
 - Supports reduced motion for accessibility.
 - Persists your Mind Panther across page refreshes using localStorage.
 
-## hosted on github pages
+## Hosted on github pages
 
 https://wksnders.github.io/mind-panther-pet/
 
-## credits
-credit for the background jungle art goes to trashboat93 on itch.io
+## Credits
+Credit for the background jungle art goes to trashboat93 on itch.io
