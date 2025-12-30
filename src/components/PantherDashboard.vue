@@ -20,25 +20,37 @@ const lore = ref(pantherStore.state.panther.lore)
 const canvasWidth = ref(Math.min(window.innerWidth - 80, 900))
 const canvasHeight = ref(canvasWidth.value * 0.5)
 
-// Computed labels
+// Labels
 const pantherTypeLabel = computed(() => {
   return (
-    pantherStore.PANTHER_TYPES.find(t => t.value === pantherStore.state.panther.type)?.label ??
-    'Mind Panther'
+    pantherStore.PANTHER_TYPES.find(
+      t => t.value === pantherStore.state.panther.type
+    )?.label ?? 'Mind Panther'
   )
 })
 
-const ageText = computed(() => pantherStore.getAge())
-const lastFedText = computed(() => pantherStore.timeAgo(pantherStore.state.panther.lastFedAt))
-const moodText = computed(() => pantherStore.state.panther.moods.join(', '))
+// ⬇️ now is an explicit dependency
+const ageText = computed(() => {
+  return pantherStore.getAge(now.value)
+})
 
-// Play action
+const lastFedText = computed(() => {
+  return pantherStore.timeAgo(
+    pantherStore.state.panther.lastFedAt,
+    now.value
+  )
+})
+
+const moodText = computed(() => {
+  return pantherStore.state.panther.moods.join(', ')
+})
+
+// Actions
 function play() {
   pantherStore.playWith(otherPantherName.value)
   otherPantherName.value = ''
 }
 
-// Return to creator
 function goBackToCreator() {
   const confirmed = window.confirm(
     'Going back will overwrite your current Mind Panther. Are you sure?'
@@ -46,23 +58,25 @@ function goBackToCreator() {
   if (confirmed) pantherStore.state.isCreated = false
 }
 
-// Update canvas size
+// Canvas sizing
 function updateCanvasSize() {
   canvasWidth.value = Math.min(window.innerWidth - 80, 900)
   canvasHeight.value = canvasWidth.value * 0.5
 }
 
-// Watchers to sync local fields with store
-watch(() => pantherStore.state.direction, val => direction.value = val)
-watch(() => pantherStore.state.reduceMotion, val => reduceMotion.value = val)
-watch(pronouns, val => pantherStore.state.panther.pronouns = val)
-watch(lore, val => pantherStore.state.panther.lore = val)
+// Sync local state
+watch(() => pantherStore.state.direction, v => (direction.value = v))
+watch(() => pantherStore.state.reduceMotion, v => (reduceMotion.value = v))
+watch(pronouns, v => (pantherStore.state.panther.pronouns = v))
+watch(lore, v => (pantherStore.state.panther.lore = v))
 
-// Auto-update "now" and moods
+// Timers
 let intervalId = null
+
 onMounted(() => {
   intervalId = setInterval(() => {
     now.value = Date.now()
+
     if (pantherStore.state.isCreated && pantherStore.updateMoods) {
       pantherStore.updateMoods(pantherStore.state.panther)
     }
@@ -76,8 +90,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateCanvasSize)
 })
 </script>
-
-
 
 <template>
   <section class="panther-game">
