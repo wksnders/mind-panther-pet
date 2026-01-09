@@ -122,6 +122,7 @@ export const PLAY_STATE_MACHINE = {
 
   [PLAY_STATES.HYPER]: [
     { to: PLAY_STATES.SLEEPING, when: ctx => ctx.playedAgo > MINUTE },
+    { to: PLAY_STATES.OUT_OF_CONTROL, when: ctx => ctx.playedAgo < MINUTE },
   ],
 
   [PLAY_STATES.SLEEPING]: [
